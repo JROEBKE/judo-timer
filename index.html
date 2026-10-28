@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>Timer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">TIMER<span> / TRAINING</span></div>
+      <button id="settingsToggle" class="icon-button" aria-label="Konfiguration öffnen" title="Konfiguration">⚙</button>
+    </header>
+
+    <section id="setupView" class="setup-view">
+      <div class="panel">
+        <h1>Timer konfigurieren</h1>
+        <label class="field-label" for="modeSelect">MODUS</label>
+        <select id="modeSelect" class="control">
+          <option value="stopwatch">1 · Stoppuhr</option>
+          <option value="race">2 · Race</option>
+          <option value="countdown">3 · Countdown</option>
+          <option value="reps">4 · Reps Counter</option>
+        </select>
+
+        <div id="countdownSettings" class="settings-group hidden">
+          <label class="field-label">TRAININGSZEIT</label>
+          <div class="time-adjust">
+            <div class="step-row">
+              <button class="step" data-target="duration" data-delta="-60">−1 min</button>
+              <button class="step" data-target="duration" data-delta="-10">−10 s</button>
+              <button class="step" data-target="duration" data-delta="-1">−1 s</button>
+            </div>
+            <output id="durationDisplay" class="setting-time">03:00</output>
+            <div class="step-row">
+              <button class="step" data-target="duration" data-delta="1">+1 s</button>
+              <button class="step" data-target="duration" data-delta="10">+10 s</button>
+              <button class="step" data-target="duration" data-delta="60">+1 min</button>
+            </div>
+          </div>
+          <div class="field-block">
+            <label class="field-label" for="roundMode">ROUND MODE</label>
+            <select id="roundMode" class="control">
+              <option value="single">Single Round</option>
+              <option value="loop">Loop</option>
+            </select>
+          </div>
+          <div id="loopSettings" class="loop-settings hidden">
+            <div class="field-block">
+              <label class="field-label">ROUNDS</label>
+              <div class="step-row compact">
+                <button id="roundMinus" class="step">−1</button>
+                <output id="roundsDisplay" class="setting-count">5</output>
+                <button id="roundPlus" class="step">+1</button>
+              </div>
+            </div>
+            <div class="field-block">
+              <label class="field-label">BREAK</label>
+              <div class="time-adjust">
+                <div class="step-row">
+                  <button class="step" data-target="break" data-delta="-60">−1 min</button>
+                  <button class="step" data-target="break" data-delta="-10">−10 s</button>
+                  <button class="step" data-target="break" data-delta="-1">−1 s</button>
+                </div>
+                <output id="breakDisplay" class="setting-time">00:15</output>
+                <div class="step-row">
+                  <button class="step" data-target="break" data-delta="1">+1 s</button>
+                  <button class="step" data-target="break" data-delta="10">+10 s</button>
+                  <button class="step" data-target="break" data-delta="60">+1 min</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="repsSettings" class="settings-group hidden">
+          <label class="field-label">TRAININGSZEIT</label>
+          <div class="time-adjust">
+            <div class="step-row">
+              <button class="step" data-target="repsDuration" data-delta="-60">−1 min</button>
+              <button class="step" data-target="repsDuration" data-delta="-10">−10 s</button>
+              <button class="step" data-target="repsDuration" data-delta="-1">−1 s</button>
+            </div>
+            <output id="repsDurationDisplay" class="setting-time">05:00</output>
+            <div class="step-row">
+              <button class="step" data-target="repsDuration" data-delta="1">+1 s</button>
+              <button class="step" data-target="repsDuration" data-delta="10">+10 s</button>
+              <button class="step" data-target="repsDuration" data-delta="60">+1 min</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="startButton" class="primary-button">GO</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <h2>Bluetooth-Buzzer</h2>
+          <span id="bluetoothSupport" class="muted small">Prüfe Web Bluetooth …</span>
+        </div>
+        <p class="muted help-text">Buzzer 1 und 2 können unabhängig verbunden werden. Die Geräteauswahl öffnet sich über den jeweiligen Button.</p>
+        <div class="device-row">
+          <div><strong>BUZZER 1</strong><span id="device1Status" class="device-status">Nicht verbunden</span></div>
+          <div class="device-actions"><button id="connect1" class="secondary-button">Verbinden</button><button id="disconnect1" class="secondary-button subtle" disabled>Trennen</button></div>
+        </div>
+        <div class="device-row">
+          <div><strong>BUZZER 2</strong><span id="device2Status" class="device-status">Nicht verbunden</span></div>
+          <div class="device-actions"><button id="connect2" class="secondary-button">Verbinden</button><button id="disconnect2" class="secondary-button subtle" disabled>Trennen</button></div>
+        </div>
+        <p id="bleMessage" class="muted small" role="status">Noch keine Buzzer verbunden.</p>
+      </div>
+
+      <div class="panel stats-panel">
+        <h2>Session</h2>
+        <div class="stats-grid">
+          <div><span class="muted">LAST</span><strong id="setupLast">—</strong></div>
+          <div><span class="muted">BEST</span><strong id="setupBest">—</strong></div>
+        </div>
+        <button id="clearSession" class="secondary-button subtle full-width">Session-Ergebnisse zurücksetzen</button>
+      </div>
+    </section>
+
+    <section id="trainingView" class="training-view hidden" aria-live="polite">
+      <div class="training-status" id="trainingStatus">READY</div>
+      <div class="hero-time" id="heroTime">00:00</div>
+      <div id="secondaryReadout" class="secondary-readout"></div>
+      <div id="winnerReadout" class="winner-readout"></div>
+      <div id="actionArea" class="action-area"></div>
+      <div id="resultStats" class="result-stats"></div>
+      <button id="resetButton" class="reset-button hidden">RESET</button>
+      <button id="backToSetup" class="text-button">Konfiguration</button>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="sounds.js"></script>
+  <script src="bluetooth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
