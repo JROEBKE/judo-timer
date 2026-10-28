@@ -1,4 +1,4 @@
-# Timer Training App
+# Judo Timer Training App
 
 Eine lokale HTML-/CSS-/JavaScript-Timer-App mit vier Modi und bis zu zwei BLE-Buzzern.
 
