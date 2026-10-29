@@ -114,7 +114,10 @@
     const s = state.session.stopwatch; s.last = Math.round(state.elapsedMs);
     if (s.best == null || s.last < s.best) s.best = s.last;
     setTime(fmt(s.last / 1000, true)); setStatus("ERGEBNIS"); setSecondary(""); setWinner("");
-    setActions([{label:"GO", onClick: startStopwatch}]);
+    setActions([
+      {label:"GO", onClick: startStopwatch},
+      {label:"RESET", className:"reset-action", onClick:resetToSetup}
+    ]);
     setResultStats(s.last, s.best); TimerSounds.stop(); updateStats();
   }
 
@@ -155,7 +158,10 @@
     if (s.best == null || elapsed < s.best) s.best = elapsed;
     setTime(fmt(elapsed / 1000, true)); setStatus("RACE ENDE");
     setWinner(draw ? "DRAW" : `BUZZER ${sorted[0].index} WINS`);
-    setSecondary(""); setActions([{label:"GO", onClick:startRace}]);
+    setSecondary(""); setActions([
+      {label:"GO", onClick:startRace},
+      {label:"RESET", className:"reset-action", onClick:resetToSetup}
+    ]);
     setResultStats(s.last, s.best); draw ? TimerSounds.draw() : TimerSounds.win(); updateStats();
   }
 
@@ -173,7 +179,7 @@
     state.lastSecond = null;
     setStatus(state.roundMode === "loop" ? `ROUND ${state.round}` : "GO");
     setTime(fmt(state.duration)); setSecondary(""); setWinner("");
-    setActions([{label:"RESET", className:"danger-action", onClick:resetToSetup}]);
+    setActions(state.roundMode === "loop" ? [] : [{label:"RESET", className:"reset-action", onClick:resetToSetup}]);
     TimerSounds.go();
     stopTick();
     state.tickTimer = setInterval(() => updateCountdown(), 40);
@@ -280,12 +286,6 @@
   $("roundPlus").addEventListener("click", () => { state.rounds = Math.min(99, state.rounds + 1); renderSetup(); });
   $("startButton").addEventListener("click", startCurrent);
   $("settingsToggle").addEventListener("click", () => showSetup());
-  $("backToSetup").addEventListener("click", () => {
-    if (state.phase === "running" || state.phase === "break") {
-      if (!confirm("Laufende Übung abbrechen und zur Konfiguration zurückkehren?")) return;
-      resetToSetup();
-    } else showSetup();
-  });
   $("resetButton").addEventListener("click", resetToSetup);
   $("clearSession").addEventListener("click", () => {
     if (!confirm("Alle Ergebnisse dieser Session zurücksetzen?")) return;
