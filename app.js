@@ -4,8 +4,8 @@
   const state = {
     mode: "stopwatch", phase: "ready", running: false,
     duration: 180, repsDuration: 300, breakDuration: 15, roundMode: "single", rounds: 5,
-    round: 1, reps: 0, startAt: 0, deadline: 0, elapsedMs: 0, tickTimer: null,
-    last: null, best: null, session: { stopwatch: {last:null,best:null}, race:{last:null,best:null}, countdown:{last:null,best:null}, reps:{last:null,best:null} },
+    round: 1, reps: 0, repsRace: [0, 0], startAt: 0, deadline: 0, elapsedMs: 0, tickTimer: null,
+    last: null, best: null, session: { stopwatch: {last:null,best:null}, race:{last:null,best:null}, countdown:{last:null,best:null}, reps:{last:null,best:null}, repsRace:{last:null,best:null} },
     racePresses: [], raceTimeout: null, lastSecond: null, resetDebounceAt: 0
   };
 
@@ -15,7 +15,7 @@
     if (hundredths) return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}.${String(Math.floor((seconds % 1) * 100)).padStart(2,"0")}`;
     return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   };
-  const modeName = () => ({stopwatch:"STOPPUHR",race:"RACE",countdown:"COUNTDOWN",reps:"REPS COUNTER"})[state.mode];
+  const modeName = () => ({stopwatch:"STOPPUHR",race:"RACE",countdown:"COUNTDOWN",reps:"REPS COUNTER",repsRace:"REPS COUNTER RACE"})[state.mode];
   const stats = () => state.session[state.mode];
   function toast(message) {
     const el = $("toast"); el.textContent = message; el.classList.add("show");
@@ -24,7 +24,7 @@
   function renderSetup() {
     $("modeSelect").value = state.mode;
     $("countdownSettings").classList.toggle("hidden", state.mode !== "countdown");
-    $("repsSettings").classList.toggle("hidden", state.mode !== "reps");
+    $("repsSettings").classList.toggle("hidden", !["reps","repsRace"].includes(state.mode));
     $("roundMode").value = state.roundMode;
     $("loopSettings").classList.toggle("hidden", state.roundMode !== "loop" || state.mode !== "countdown");
     $("durationDisplay").textContent = fmt(state.duration);
@@ -35,7 +35,12 @@
   }
   function updateStats() {
     const s = stats();
-    const formatResult = val => val == null ? "—" : (state.mode === "reps" ? `${val} REPS` : fmt(val / 1000, true));
+    const formatResult = val => {
+      if (val == null) return "—";
+      if (state.mode === "reps") return `${val} REPS`;
+      if (state.mode === "repsRace") return `B1 ${val[0]} · B2 ${val[1]}`;
+      return fmt(val / 1000, true);
+    };
     $("setupLast").textContent = formatResult(s.last);
     $("setupBest").textContent = formatResult(s.best);
   }
@@ -91,6 +96,7 @@
     if (state.mode === "stopwatch") startStopwatch();
     else if (state.mode === "race") startRace();
     else if (state.mode === "countdown") startCountdown();
+    else if (state.mode === "repsRace") startRepsRace();
     else startReps();
   }
 
@@ -114,10 +120,7 @@
     const s = state.session.stopwatch; s.last = Math.round(state.elapsedMs);
     if (s.best == null || s.last < s.best) s.best = s.last;
     setTime(fmt(s.last / 1000, true)); setStatus("ERGEBNIS"); setSecondary(""); setWinner("");
-    setActions([
-      {label:"GO", onClick: startStopwatch},
-      {label:"RESET", className:"reset-action", onClick:resetToSetup}
-    ]);
+    setActions([{label:"GO", onClick: startStopwatch}]);
     setResultStats(s.last, s.best); TimerSounds.stop(); updateStats();
   }
 
@@ -158,10 +161,7 @@
     if (s.best == null || elapsed < s.best) s.best = elapsed;
     setTime(fmt(elapsed / 1000, true)); setStatus("RACE ENDE");
     setWinner(draw ? "DRAW" : `BUZZER ${sorted[0].index} WINS`);
-    setSecondary(""); setActions([
-      {label:"GO", onClick:startRace},
-      {label:"RESET", className:"reset-action", onClick:resetToSetup}
-    ]);
+    setSecondary(""); setActions([{label:"GO", onClick:startRace}]);
     setResultStats(s.last, s.best); draw ? TimerSounds.draw() : TimerSounds.win(); updateStats();
   }
 
@@ -179,7 +179,7 @@
     state.lastSecond = null;
     setStatus(state.roundMode === "loop" ? `ROUND ${state.round}` : "GO");
     setTime(fmt(state.duration)); setSecondary(""); setWinner("");
-    setActions(state.roundMode === "loop" ? [] : [{label:"RESET", className:"reset-action", onClick:resetToSetup}]);
+    setActions([{label:"RESET", className:"danger-action", onClick:resetToSetup}]);
     TimerSounds.go();
     stopTick();
     state.tickTimer = setInterval(() => updateCountdown(), 40);
@@ -251,6 +251,49 @@
     setResultStats(s.last, s.best, true); activateResetButton(false); TimerSounds.stop(); updateStats();
   }
 
+  // Reps Counter Race: each physical buzzer increments its own athlete's score.
+  function startRepsRace() {
+    if (state.phase === "running") return;
+    state.phase = "running"; state.running = true; state.repsRace = [0, 0];
+    state.startAt = performance.now(); state.deadline = state.startAt + state.repsDuration * 1000; state.lastSecond = null;
+    showTraining(); activateResetButton(true);
+    setStatus("REPS COUNTER RACE"); setTime(fmt(state.repsDuration)); renderRepsRaceCounts(); setWinner("");
+    setActions([
+      {label:"+1 REP · BUZZER 1", onClick:() => addRaceRep(1)},
+      {label:"+1 REP · BUZZER 2", onClick:() => addRaceRep(2)}
+    ]);
+    TimerSounds.go(); stopTick();
+    state.tickTimer = setInterval(() => updateRepsRaceCountdown(), 40);
+  }
+  function renderRepsRaceCounts() {
+    setSecondary(`BUZZER 1: ${state.repsRace[0]}     BUZZER 2: ${state.repsRace[1]}`);
+  }
+  function addRaceRep(index) {
+    if (state.phase !== "running") return;
+    state.repsRace[index - 1] += 1;
+    renderRepsRaceCounts(); TimerSounds.rep();
+  }
+  function updateRepsRaceCountdown() {
+    if (state.phase !== "running") return;
+    const remaining = Math.max(0, (state.deadline - performance.now()) / 1000);
+    setTime(fmt(remaining));
+    const sec = Math.ceil(remaining);
+    if (remaining <= 5 && remaining > 0 && sec !== state.lastSecond) { state.lastSecond = sec; TimerSounds.tick(); }
+    if (remaining <= 0) finishRepsRace();
+  }
+  function finishRepsRace() {
+    stopTick(); state.phase = "result"; state.running = false;
+    const result = [...state.repsRace];
+    const s = state.session.repsRace; s.last = result;
+    if (s.best == null) s.best = [...result];
+    else s.best = [Math.max(s.best[0], result[0]), Math.max(s.best[1], result[1])];
+    setStatus("ERGEBNIS"); setTime(`${result[0]} : ${result[1]}`); setSecondary("BUZZER 1 REPS     BUZZER 2 REPS");
+    setWinner(result[0] === result[1] ? "DRAW" : `BUZZER ${result[0] > result[1] ? 1 : 2} WINS`);
+    setActions([{label:"START", onClick:startRepsRace}]);
+    $("resultStats").textContent = `LAST  B1 ${s.last[0]} · B2 ${s.last[1]}     BEST  B1 ${s.best[0]} · B2 ${s.best[1]}`;
+    activateResetButton(false); TimerSounds.stop(); updateStats();
+  }
+
   // Buzzer mapping per mode.
   function onBuzzer(index, timestamp) {
     // Debounce the same physical buzzer at application level.
@@ -262,6 +305,7 @@
     if (state.mode === "stopwatch" && state.phase === "running") stopStopwatch();
     else if (state.mode === "race" && state.phase === "running") racePress(index, timestamp);
     else if (state.mode === "reps" && state.phase === "running") addRep();
+    else if (state.mode === "repsRace" && state.phase === "running") addRaceRep(index);
     else if (state.mode === "countdown" && state.phase === "running" && state.roundMode === "loop") resetToSetup();
     // In result states, a buzzer starts the next attempt.
     else if (state.phase === "result") {
@@ -269,6 +313,7 @@
       else if (state.mode === "race") startRace();
       else if (state.mode === "countdown") startCountdown();
       else if (state.mode === "reps") startReps();
+      else if (state.mode === "repsRace") startRepsRace();
     }
   }
 
@@ -286,6 +331,12 @@
   $("roundPlus").addEventListener("click", () => { state.rounds = Math.min(99, state.rounds + 1); renderSetup(); });
   $("startButton").addEventListener("click", startCurrent);
   $("settingsToggle").addEventListener("click", () => showSetup());
+  $("backToSetup").addEventListener("click", () => {
+    if (state.phase === "running" || state.phase === "break") {
+      if (!confirm("Laufende Übung abbrechen und zur Konfiguration zurückkehren?")) return;
+      resetToSetup();
+    } else showSetup();
+  });
   $("resetButton").addEventListener("click", resetToSetup);
   $("clearSession").addEventListener("click", () => {
     if (!confirm("Alle Ergebnisse dieser Session zurücksetzen?")) return;
