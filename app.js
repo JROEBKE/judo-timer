@@ -120,7 +120,10 @@
     const s = state.session.stopwatch; s.last = Math.round(state.elapsedMs);
     if (s.best == null || s.last < s.best) s.best = s.last;
     setTime(fmt(s.last / 1000, true)); setStatus("ERGEBNIS"); setSecondary(""); setWinner("");
-    setActions([{label:"GO", onClick: startStopwatch}]);
+    setActions([
+      {label:"GO", onClick: startStopwatch},
+      {label:"RESET", className:"reset-action", onClick:resetToSetup}
+    ]);
     setResultStats(s.last, s.best); TimerSounds.stop(); updateStats();
   }
 
