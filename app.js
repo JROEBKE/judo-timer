@@ -363,13 +363,11 @@
 
 //battery UI
 function updateBatteryUi(index, level) {
-    const el = $(`device${index}Battery`);
+    const el = document.getElementById(`device${index}Battery`);
     if (el) {
       el.textContent = level != null ? `🔋 ${level}%` : "";
     }
-}
-
-  
+  }
 
 // PWA service worker
 if ('serviceWorker' in navigator) {

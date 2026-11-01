@@ -96,14 +96,23 @@
       slot.characteristic.addEventListener("characteristicvaluechanged", slot.listener);
       await slot.characteristic.startNotifications();
 
-      // Versuche den Batteriestand auszulesen (optional)
+      // Versuche den Batteriestand auszulesen
       try {
         const battService = await slot.server.getPrimaryService(BATTERY_SERVICE_UUID);
         const battChar = await battService.getCharacteristic(BATTERY_CHAR_UUID);
+        
+        // Entweder einmalig lesen:
         const battValue = await battChar.readValue();
         updateBattery(index, battValue.getUint8(0));
-      } catch {
-        // Ignorieren, falls ESP32 keinen Battery Service bereitstellt
+
+        // ODER (falls Notification gewünscht):
+        // await battChar.startNotifications();
+        // battChar.addEventListener('characteristicvaluechanged', (e) => {
+        //   updateBattery(index, e.target.value.getUint8(0));
+        // });
+
+      } catch (error) {
+        console.error("Fehler beim Abrufen des Batteriestands:", error);
       }
 
       status(index, `Connected: ${device.name || "Buzzer"}`, true);
