@@ -133,7 +133,7 @@
     state.phase = "running"; state.running = true; state.startAt = performance.now();
     state.elapsedMs = 0; state.racePresses = []; state.lastSecond = null;
     if (state.raceTimeout) clearTimeout(state.raceTimeout);
-    showTraining(); setStatus("RACE"); setTime("00:00.00"); setSecondary("WER DRÜCKT ZUERST?"); setWinner("");
+    showTraining(); setStatus("RACE"); setTime("00:00.00"); setSecondary("WHO IS FIRST?"); setWinner("");
     activateResetButton(true);
     setActions([
       {label:"BUZZER 1", onClick:() => racePress(1, performance.now())},
