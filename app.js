@@ -15,7 +15,6 @@
     if (hundredths) return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}.${String(Math.floor((seconds % 1) * 100)).padStart(2,"0")}`;
     return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   };
-  const modeName = () => ({stopwatch:"STOPPUHR",race:"RACE",countdown:"COUNTDOWN",reps:"REPS COUNTER",repsRace:"REPS COUNTER RACE"})[state.mode];
   const stats = () => state.session[state.mode];
   function toast(message) {
     const el = $("toast"); el.textContent = message; el.classList.add("show");
@@ -61,7 +60,7 @@
     $("setupView").classList.add("hidden");
     $("trainingView").classList.remove("hidden");
     document.body.classList.add("training");
-    $("resetButton").classList.add("hidden");
+    activateResetButton(true);
     $("resultStats").replaceChildren();
   }
   function showSetup() {
@@ -80,10 +79,14 @@
       const strong = document.createElement("strong"); strong.textContent = value;
       span.appendChild(strong); el.appendChild(span);
     };
-    const format = v => v == null ? "—" : reps ? String(v) : fmt(v / 1000, true);
-    add("LAST", format(last)); add("BEST", format(best));
+    if (state.mode === "repsRace") {
+      add("LAST", `B1 ${last[0]} · B2 ${last[1]}`);
+      add("BEST", `B1 ${best[0]} · B2 ${best[1]}`);
+    } else {
+      const format = v => v == null ? "—" : reps ? String(v) : fmt(v / 1000, true);
+      add("LAST", format(last)); add("BEST", format(best));
+    }
   }
-  function finishToSetup() { showSetup(); }
   function activateResetButton(show) { $("resetButton").classList.toggle("hidden", !show); }
   function resetToSetup() {
     stopTick(); state.running = false; state.phase = "ready";
@@ -120,21 +123,17 @@
     const s = state.session.stopwatch; s.last = Math.round(state.elapsedMs);
     if (s.best == null || s.last < s.best) s.best = s.last;
     setTime(fmt(s.last / 1000, true)); setStatus("ERGEBNIS"); setSecondary(""); setWinner("");
-    setActions([
-      {label:"GO", onClick: startStopwatch},
-      {label:"RESET", className:"reset-action", onClick:resetToSetup}
-    ]);
+    setActions([{label:"GO", onClick: startStopwatch}]);
     setResultStats(s.last, s.best); TimerSounds.stop(); updateStats();
   }
 
-  // Race: both press timestamps are evaluated within a 50 ms event-arrival window.
+  // Race
   function startRace() {
     if (state.phase === "running") return;
     state.phase = "running"; state.running = true; state.startAt = performance.now();
     state.elapsedMs = 0; state.racePresses = []; state.lastSecond = null;
     if (state.raceTimeout) clearTimeout(state.raceTimeout);
     showTraining(); setStatus("RACE"); setTime("00:00.00"); setSecondary("WHO IS FIRST?"); setWinner("");
-    activateResetButton(true);
     setActions([
       {label:"BUZZER 1", onClick:() => racePress(1, performance.now())},
       {label:"BUZZER 2", onClick:() => racePress(2, performance.now())}
@@ -149,9 +148,7 @@
     if (state.racePresses.length === 1) {
       state.raceTimeout = setTimeout(() => resolveRace(), 50);
     } else {
-      const delta = Math.abs(state.racePresses[0].at - state.racePresses[1].at);
-      if (delta <= 50) resolveRace();
-      else resolveRace();
+      resolveRace();
     }
   }
   function resolveRace() {
@@ -169,12 +166,12 @@
     setResultStats(s.last, s.best); draw ? TimerSounds.draw() : TimerSounds.win(); updateStats();
   }
 
-  // Countdown single round / loop.
+  // Countdown
   function startCountdown() {
     if (state.phase === "running" || state.phase === "break") return;
     state.roundMode = $("roundMode").value;
     state.round = 1; state.phase = "running"; state.running = true;
-    showTraining(); activateResetButton(state.roundMode === "loop");
+    showTraining();
     beginRound();
   }
   function beginRound() {
@@ -183,7 +180,7 @@
     state.lastSecond = null;
     setStatus(state.roundMode === "loop" ? `ROUND ${state.round}` : "GO");
     setTime(fmt(state.duration)); setSecondary(""); setWinner("");
-    setActions([{label:"RESET", className:"danger-action", onClick:resetToSetup}]);
+    setActions([]);
     TimerSounds.go();
     stopTick();
     state.tickTimer = setInterval(() => updateCountdown(), 40);
@@ -223,12 +220,12 @@
     stopTick(); state.round += 1; beginRound();
   }
 
-  // Reps counter. Buzzer input increments only while running; reset is screen-only.
+  // Reps counter
   function startReps() {
     if (state.phase === "running") return;
     state.phase = "running"; state.running = true; state.reps = 0;
     state.startAt = performance.now(); state.deadline = state.startAt + state.repsDuration * 1000; state.lastSecond = null;
-    showTraining(); activateResetButton(true);
+    showTraining();
     setStatus("REPS COUNTER"); setTime(fmt(state.repsDuration)); setSecondary("REPS: 0"); setWinner("");
     setActions([{label:"+1 REP", onClick:addRep}]);
     TimerSounds.go(); stopTick();
@@ -252,15 +249,15 @@
     if (s.best == null || s.last > s.best) s.best = s.last;
     setStatus("ERGEBNIS"); setTime(`${state.reps}`); setSecondary("REPS"); setWinner("");
     setActions([{label:"START", onClick:startReps}]);
-    setResultStats(s.last, s.best, true); activateResetButton(true); TimerSounds.stop(); updateStats();
+    setResultStats(s.last, s.best, true); TimerSounds.stop(); updateStats();
   }
 
-  // Reps Counter Race: each physical buzzer increments its own athlete's score.
+  // Reps Counter Race
   function startRepsRace() {
     if (state.phase === "running") return;
     state.phase = "running"; state.running = true; state.repsRace = [0, 0];
     state.startAt = performance.now(); state.deadline = state.startAt + state.repsDuration * 1000; state.lastSecond = null;
-    showTraining(); activateResetButton(true);
+    showTraining();
     setStatus("REPS COUNTER RACE"); setTime(fmt(state.repsDuration)); renderRepsRaceCounts(); setWinner("");
     setActions([
       {label:"+1 REP · BUZZER 1", onClick:() => addRaceRep(1)},
@@ -294,13 +291,11 @@
     setStatus("ERGEBNIS"); setTime(`${result[0]} : ${result[1]}`); setSecondary("BUZZER 1 REPS     BUZZER 2 REPS");
     setWinner(result[0] === result[1] ? "DRAW" : `BUZZER ${result[0] > result[1] ? 1 : 2} WINS`);
     setActions([{label:"START", onClick:startRepsRace}]);
-    $("resultStats").textContent = `LAST  B1 ${s.last[0]} · B2 ${s.last[1]}     BEST  B1 ${s.best[0]} · B2 ${s.best[1]}`;
-    activateResetButton(true); TimerSounds.stop(); updateStats();
+    setResultStats(s.last, s.best, true); TimerSounds.stop(); updateStats();
   }
 
   // Buzzer mapping per mode.
   function onBuzzer(index, timestamp) {
-    // Debounce the same physical buzzer at application level.
     if (timestamp - state.resetDebounceAt < 80 && state.lastInputIndex === index) return;
     state.lastInputIndex = index; state.resetDebounceAt = timestamp;
     if (state.phase === "ready") {
@@ -311,7 +306,6 @@
     else if (state.mode === "reps" && state.phase === "running") addRep();
     else if (state.mode === "repsRace" && state.phase === "running") addRaceRep(index);
     else if (state.mode === "countdown" && state.phase === "running" && state.roundMode === "loop") resetToSetup();
-    // In result states, a buzzer starts the next attempt.
     else if (state.phase === "result") {
       if (state.mode === "stopwatch") startStopwatch();
       else if (state.mode === "race") startRace();
@@ -334,7 +328,6 @@
   $("roundMinus").addEventListener("click", () => { state.rounds = Math.max(1, state.rounds - 1); renderSetup(); });
   $("roundPlus").addEventListener("click", () => { state.rounds = Math.min(99, state.rounds + 1); renderSetup(); });
   $("startButton").addEventListener("click", startCurrent);
-  $("settingsToggle").addEventListener("click", () => showSetup());
   $("resetButton").addEventListener("click", resetToSetup);
   $("clearSession").addEventListener("click", () => {
     Object.keys(state.session).forEach(k => state.session[k] = {last:null,best:null});
@@ -365,6 +358,5 @@
   });
   TimerBluetooth.setHandlers(onBuzzer, updateBleUi);
 
-  // Start a training session from the ready screen; first interaction unlocks Web Audio.
   state.phase = "ready"; renderSetup();
 })();
