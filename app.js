@@ -89,7 +89,7 @@
     stopTick(); state.running = false; state.phase = "ready";
     if (state.raceTimeout) clearTimeout(state.raceTimeout);
     state.raceTimeout = null; state.racePresses = [];
-    TimerSounds.ready(); showSetup();
+    showSetup(); TimerSounds.ready();
   }
   function startCurrent() {
     state.mode = $("modeSelect").value;
