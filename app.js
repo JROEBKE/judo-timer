@@ -134,6 +134,7 @@
     state.elapsedMs = 0; state.racePresses = []; state.lastSecond = null;
     if (state.raceTimeout) clearTimeout(state.raceTimeout);
     showTraining(); setStatus("RACE"); setTime("00:00.00"); setSecondary("WER DRÜCKT ZUERST?"); setWinner("");
+    activateResetButton(true);
     setActions([
       {label:"BUZZER 1", onClick:() => racePress(1, performance.now())},
       {label:"BUZZER 2", onClick:() => racePress(2, performance.now())}
@@ -334,12 +335,6 @@
   $("roundPlus").addEventListener("click", () => { state.rounds = Math.min(99, state.rounds + 1); renderSetup(); });
   $("startButton").addEventListener("click", startCurrent);
   $("settingsToggle").addEventListener("click", () => showSetup());
-  $("backToSetup").addEventListener("click", () => {
-    if (state.phase === "running" || state.phase === "break") {
-      if (!confirm("Laufende Übung abbrechen und zur Konfiguration zurückkehren?")) return;
-      resetToSetup();
-    } else showSetup();
-  });
   $("resetButton").addEventListener("click", resetToSetup);
   $("clearSession").addEventListener("click", () => {
     if (!confirm("Alle Ergebnisse dieser Session zurücksetzen?")) return;
