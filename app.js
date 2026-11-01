@@ -356,11 +356,22 @@
       await TimerBluetooth.disconnect(index); toast(`Buzzer ${index} getrennt.`);
     });
   });
-  TimerBluetooth.setHandlers(onBuzzer, updateBleUi);
+  TimerBluetooth.setHandlers(onBuzzer, updateBleUi, updateBatteryUi);
 
   state.phase = "ready"; renderSetup();
 })();
 
+//battery UI
+function updateBatteryUi(index, level) {
+    const el = $(`device${index}Battery`);
+    if (el) {
+      el.textContent = level != null ? `🔋 ${level}%` : "";
+    }
+}
+
+  
+
+// PWA service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')

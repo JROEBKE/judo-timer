@@ -107,14 +107,15 @@
         <div class="device-row">
           <div><strong>BUZZER 1</strong><span id="device1Status" class="device-status">Not connected</span></div>
           <div class="device-actions"><button id="connect1" class="secondary-button">Connect</button><button id="disconnect1" class="secondary-button subtle" disabled>Disconnect</button></div>
+          <span id="device1Battery" class="device-battery muted small"></span>
         </div>
         <div class="device-row">
           <div><strong>BUZZER 2</strong><span id="device2Status" class="device-status">Not connected</span></div>
           <div class="device-actions"><button id="connect2" class="secondary-button">Connect</button><button id="disconnect2" class="secondary-button subtle" disabled>Disconnect</button></div>
+          <span id="device2Battery" class="device-battery muted small"></span>
         </div>
-        <p id="bleMessage" class="muted small" role="status">Noch keine Buzzer verbunden.</p>
+        <p id="bleMessage" class="muted small" role="status">No devices connected.</p>
       </div>
-
       <div class="panel stats-panel">
         <h2>Session</h2>
         <div class="stats-grid">
