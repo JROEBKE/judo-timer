@@ -252,7 +252,7 @@
     if (s.best == null || s.last > s.best) s.best = s.last;
     setStatus("ERGEBNIS"); setTime(`${state.reps}`); setSecondary("REPS"); setWinner("");
     setActions([{label:"START", onClick:startReps}]);
-    setResultStats(s.last, s.best, true); activateResetButton(false); TimerSounds.stop(); updateStats();
+    setResultStats(s.last, s.best, true); activateResetButton(true); TimerSounds.stop(); updateStats();
   }
 
   // Reps Counter Race: each physical buzzer increments its own athlete's score.
@@ -295,7 +295,7 @@
     setWinner(result[0] === result[1] ? "DRAW" : `BUZZER ${result[0] > result[1] ? 1 : 2} WINS`);
     setActions([{label:"START", onClick:startRepsRace}]);
     $("resultStats").textContent = `LAST  B1 ${s.last[0]} · B2 ${s.last[1]}     BEST  B1 ${s.best[0]} · B2 ${s.best[1]}`;
-    activateResetButton(false); TimerSounds.stop(); updateStats();
+    activateResetButton(true); TimerSounds.stop(); updateStats();
   }
 
   // Buzzer mapping per mode.
@@ -337,7 +337,6 @@
   $("settingsToggle").addEventListener("click", () => showSetup());
   $("resetButton").addEventListener("click", resetToSetup);
   $("clearSession").addEventListener("click", () => {
-    if (!confirm("Alle Ergebnisse dieser Session zurücksetzen?")) return;
     Object.keys(state.session).forEach(k => state.session[k] = {last:null,best:null});
     renderSetup(); toast("Session-Ergebnisse zurückgesetzt.");
   });
