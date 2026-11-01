@@ -50,9 +50,9 @@
     }
   }
   async function connect(index) {
-    if (!navigator.bluetooth) throw new Error("Web Bluetooth wird von diesem Browser nicht unterstützt.");
+    if (!navigator.bluetooth) throw new Error("Web Bluetooth is not supported by this browser.");
     if (slots[index - 1]) await disconnect(index);
-    status(index, "Geräteauswahl öffnen …", false);
+    status(index, "Device selection open …", false);
     const device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [SERVICE_UUID] }],
       optionalServices: [SERVICE_UUID]
@@ -62,10 +62,10 @@
     device.addEventListener("gattserverdisconnected", () => {
       if (slots[index - 1] === slot) {
         slots[index - 1] = null;
-        status(index, "Verbindung getrennt", false);
+        status(index, "Connection disconnected", false);
       }
     });
-    status(index, "Verbinde …", false);
+    status(index, "Connecting …", false);
     try {
       slot.server = await device.gatt.connect();
       const service = await slot.server.getPrimaryService(SERVICE_UUID);
@@ -73,7 +73,7 @@
       slot.listener = e => onNotification(index, e);
       slot.characteristic.addEventListener("characteristicvaluechanged", slot.listener);
       await slot.characteristic.startNotifications();
-      status(index, `Verbunden: ${device.name || "Buzzer"}`, true);
+      status(index, `Connected: ${device.name || "Buzzer"}`, true);
       return device.name || "Buzzer";
     } catch (error) {
       slots[index - 1] = null;
@@ -88,7 +88,7 @@
     try {
       if (slot.characteristic && slot.listener) slot.characteristic.removeEventListener("characteristicvaluechanged", slot.listener);
       if (slot.device.gatt.connected) slot.device.gatt.disconnect();
-    } finally { status(index, "Nicht verbunden", false); }
+    } finally { status(index, "Not connected", false); }
   }
   window.TimerBluetooth = {
     isSupported: () => !!navigator.bluetooth,
